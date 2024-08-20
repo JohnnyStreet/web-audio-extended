@@ -1,0 +1,23 @@
+{
+  "name": "web-audio-extended",
+  "version": "0.0.1",
+  "scripts": {
+    "build": "npm run build:static && npm run build:js",
+    "build:js": "esbuild src/ts/AudioContextExtended.ts --bundle --minify --sourcemap --outfile=dist/AudioContextExtended.js",
+    "build:static": "cpy src/html/**/* dist",
+    "start": "http-server -c-1 dist",
+    "dev": "concurrently \"npm run start\" && esbuild src/AudioContextExtended.ts --bundle --sourcemap --outfile=dist/AudioContextExtended.js --watch"
+  },
+  "keywords": [],
+  "author": "Johnny Street",
+  "license": "MIT",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^22.4.1",
+    "concurrently": "^8.2.2",
+    "cpy-cli": "^5.0.0",
+    "esbuild": "^0.23.1",
+    "http-server": "^14.1.1",
+    "typescript": "^5.5.4"
+  }
+}

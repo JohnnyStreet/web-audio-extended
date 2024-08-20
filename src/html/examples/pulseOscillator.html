@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>web-audio-extended</title>
+    <style>
+      input {
+        display: block;
+      }
+    </style>
+  </head>
+
+  <body>
+    <button id="play">play</button>
+    <button id="stop">stop</button>
+    <input type="range" id="width" value="0.25" min="0" max="1" step="0.01" />
+    <script src="../AudioContextExtended.js"></script>
+    <script>
+      const play = document.getElementById("play");
+      let gain = null;
+      let sourceNode = null;
+      let audioContext = null;
+      let oscillator = null;
+      let currentWidth = 0.5;
+
+      function stopSound() {
+        oscillator?.stop();
+        oscillator = null;
+      }
+
+      play.addEventListener("click", () => {
+        if (!audioContext) {
+          audioContext = new AudioContextExtended();
+          gain = audioContext.createGain();
+          gain.gain.value = 0.5;
+          gain.connect(audioContext.destination);
+        }
+
+        stopSound();
+
+        oscillator = audioContext.createPulseOscillator();
+        oscillator.type = "sawtooth";
+        oscillator.frequency.value = 220;
+        oscillator.pulseWidth = currentWidth;
+        oscillator.connect(gain);
+        oscillator.start();
+      });
+
+      const stop = document.getElementById("stop");
+      stop.addEventListener("click", () => {
+        stopSound();
+      });
+
+      const width = document.getElementById("width");
+      width.addEventListener("input", () => {
+        oscillator?.pulseWidth.setTargetAtTime(
+          width.value,
+          audioContext.currentTime,
+          0.02
+        );
+        currentWidth = width.value;
+      });
+    </script>
+  </body>
+</html>

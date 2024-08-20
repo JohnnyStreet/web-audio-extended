@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>web-audio-extended</title>
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      .effect {
+        display: inline-block;
+        vertical-align: top;
+        border: 1px solid #666;
+        border-radius: 10px;
+        margin: 10px;
+        padding: 10px;
+      }
+      .effect h3 {
+        margin: 5px;
+        text-align: center;
+      }
+      .effect label {
+        display: inline-block;
+        width: 70px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <button id="play">play</button>
+    <button id="stop">stop</button>
+    <br />
+
+    <div class="effect">
+      <h3>EQ</h3>
+      <label>Low</label>
+      <input
+        type="range"
+        id="low"
+        value="0"
+        min="-64"
+        max="0"
+        step="0.01"
+      /><br />
+      <label>Mid</label>
+      <input
+        type="range"
+        id="mid"
+        value="0"
+        min="-64"
+        max="0"
+        step="0.01"
+      /><br />
+      <label>High</label>
+      <input
+        type="range"
+        id="high"
+        value="0"
+        min="-64"
+        max="0"
+        step="0.01"
+      /><br />
+    </div>
+
+    <div class="effect">
+      <h3>Chorus</h3>
+      <label>Rate</label>
+      <input
+        type="range"
+        id="chorusRate"
+        value="4"
+        min="0"
+        max="10"
+        step="0.001"
+      /><br />
+      <label>Depth</label>
+      <input
+        type="range"
+        id="chorusDepth"
+        value="0.0003"
+        min="0"
+        max="0.003"
+        step="0.0001"
+      /><br />
+      <label>Wet</label>
+      <input
+        type="range"
+        id="chorusWet"
+        value="0.4"
+        min="0"
+        max="1"
+        step="0.01"
+      /><br />
+      <label>Dry</label>
+      <input
+        type="range"
+        id="chorusDry"
+        value="1"
+        min="0"
+        max="1"
+        step="0.01"
+      /><br />
+    </div>
+
+    <div class="effect">
+      <h3>Delay</h3>
+      <label>Delay Time</label>
+      <input
+        type="range"
+        id="delayTime"
+        value="0.48"
+        min="0"
+        max="1"
+        step="0.01"
+      /><br />
+      <label>Feedback</label>
+      <input
+        type="range"
+        id="feedback"
+        value="0.3"
+        min="0"
+        max="1"
+        step="0.01"
+      /><br />
+      <label>Wet</label>
+      <input
+        type="range"
+        id="delayWet"
+        value="0.5"
+        min="0"
+        max="1"
+        step="0.01"
+      /><br />
+      <label>Dry</label>
+      <input
+        type="range"
+        id="delayDry"
+        value="1"
+        min="0"
+        max="1"
+        step="0.01"
+      /><br />
+    </div>
+
+    <div class="effect">
+      <h3>Reverb</h3>
+      <label>Predelay</label>
+      <input
+        type="range"
+        id="predelay"
+        value="0.3"
+        min="0"
+        max="1"
+        step="0.01"
+      /><br />
+      <label>Highpass</label>
+      <input
+        type="range"
+        id="highpass"
+        value="1000"
+        min="0"
+        max="16000"
+        step="1"
+      /><br />
+      <label>Lowpass</label>
+      <input
+        type="range"
+        id="lowpass"
+        value="4000"
+        min="0"
+        max="16000"
+        step="1"
+      />
+      <br />
+      <label>Wet</label>
+      <input
+        type="range"
+        id="wet"
+        value="0.4"
+        min="0"
+        max="1"
+        step="0.01"
+      /><br />
+      <label>Dry</label>
+      <input
+        type="range"
+        id="dry"
+        value="1"
+        min="0"
+        max="1"
+        step="0.01"
+      /><br />
+    </div>
+
+    <script src="../AudioContextExtended.js"></script>
+    <script>
+      const play = document.getElementById("play");
+      const stop = document.getElementById("stop");
+      const low = document.getElementById("low");
+      const mid = document.getElementById("mid");
+      const high = document.getElementById("high");
+      const wet = document.getElementById("wet");
+      const dry = document.getElementById("dry");
+      const predelay = document.getElementById("predelay");
+      const lowpass = document.getElementById("lowpass");
+      const highpass = document.getElementById("highpass");
+      const chorusRate = document.getElementById("chorusRate");
+      const chorusDepth = document.getElementById("chorusDepth");
+      const chorusWet = document.getElementById("chorusWet");
+      const chorusDry = document.getElementById("chorusDry");
+      const delayTime = document.getElementById("delayTime");
+      const delayFeedback = document.getElementById("feedback");
+      const delayWet = document.getElementById("delayWet");
+      const delayDry = document.getElementById("delayDry");
+
+      let audioContext = null;
+      let eq = null;
+      let chorus = null;
+      let reverb = null;
+      let sourceNode = null;
+
+      play.addEventListener("click", async () => {
+        if (!audioContext) {
+          audioContext = new AudioContextExtended();
+          eq = audioContext.createThreeBandEqualizer();
+          chorus = audioContext.createChorusEffect();
+          delay = audioContext.createDelayEffect();
+          reverb = audioContext.createReverbEffect();
+          eq.connect(chorus)
+            .connect(delay)
+            .connect(reverb)
+            .connect(audioContext.destination);
+        } else if (audioContext.state === "suspended") {
+          await audioContext.resume();
+        }
+
+        eq.low.value = parseFloat(low.value);
+        eq.mid.value = parseFloat(mid.value);
+        eq.high.value = parseFloat(high.value);
+        chorus.rate.value = parseFloat(chorusRate.value);
+        chorus.depth.value = parseFloat(chorusDepth.value);
+        chorus.wet.value = parseFloat(chorusWet.value);
+        chorus.dry.value = parseFloat(chorusDry.value);
+        delay.delayTime.value = parseFloat(delayTime.value);
+        delay.feedback.value = parseFloat(delayFeedback.value);
+        delay.wet.value = parseFloat(delayWet.value);
+        delay.dry.value = parseFloat(delayDry.value);
+        reverb.wet.value = parseFloat(wet.value);
+        reverb.dry.value = parseFloat(dry.value);
+        reverb.predelay.value = parseFloat(predelay.value);
+        reverb.highpass.value = parseFloat(highpass.value);
+        reverb.lowpass.value = parseFloat(lowpass.value);
+
+        sourceNode = audioContext.createBufferSource();
+        sourceNode.loop = true;
+        sourceNode.buffer = await audioContext.loadBuffer(
+          "./res/hip-hop-sample.mp3"
+        );
+        sourceNode.connect(eq);
+        sourceNode.start();
+      });
+
+      stop.addEventListener("click", () => {
+        sourceNode?.stop();
+      });
+
+      low.addEventListener("input", () => {
+        eq.low.setTargetAtTime(low.value, audioContext.currentTime, 0.02);
+      });
+
+      mid.addEventListener("input", () => {
+        eq.mid.setTargetAtTime(mid.value, audioContext.currentTime, 0.02);
+      });
+
+      high.addEventListener("input", () => {
+        eq.high.setTargetAtTime(high.value, audioContext.currentTime, 0.02);
+      });
+
+      wet.addEventListener("input", () => {
+        reverb.wet.setTargetAtTime(wet.value, audioContext.currentTime, 0.02);
+      });
+
+      dry.addEventListener("input", () => {
+        reverb.dry.setTargetAtTime(dry.value, audioContext.currentTime, 0.02);
+      });
+
+      predelay.addEventListener("input", () => {
+        reverb.predelay.setTargetAtTime(
+          predelay.value,
+          audioContext.currentTime,
+          0.02
+        );
+      });
+
+      lowpass.addEventListener("input", () => {
+        reverb.lowpass.setTargetAtTime(
+          lowpass.value,
+          audioContext.currentTime,
+          0.02
+        );
+      });
+
+      highpass.addEventListener("input", () => {
+        reverb.highpass.setTargetAtTime(
+          highpass.value,
+          audioContext.currentTime,
+          0.02
+        );
+      });
+
+      chorusRate.addEventListener("input", () => {
+        chorus.rate.setTargetAtTime(
+          chorusRate.value,
+          audioContext.currentTime,
+          0.02
+        );
+      });
+
+      chorusDepth.addEventListener("input", () => {
+        chorus.depth.setTargetAtTime(
+          chorusDepth.value,
+          audioContext.currentTime,
+          0.02
+        );
+      });
+
+      chorusDry.addEventListener("input", () => {
+        chorus.dry.setTargetAtTime(
+          chorusDry.value,
+          audioContext.currentTime,
+          0.02
+        );
+      });
+
+      chorusWet.addEventListener("input", () => {
+        chorus.wet.setTargetAtTime(
+          chorusWet.value,
+          audioContext.currentTime,
+          0.02
+        );
+      });
+
+      delayTime.addEventListener("input", () => {
+        delay.delayTime.setTargetAtTime(
+          delayTime.value,
+          audioContext.currentTime,
+          0.02
+        );
+      });
+
+      delayFeedback.addEventListener("input", () => {
+        delay.feedback.setTargetAtTime(
+          delayFeedback.value,
+          audioContext.currentTime,
+          0.02
+        );
+      });
+
+      delayDry.addEventListener("input", () => {
+        delay.dry.setTargetAtTime(
+          delayDry.value,
+          audioContext.currentTime,
+          0.02
+        );
+      });
+
+      delayWet.addEventListener("input", () => {
+        delay.wet.setTargetAtTime(
+          delayWet.value,
+          audioContext.currentTime,
+          0.02
+        );
+      });
+    </script>
+  </body>
+</html>
