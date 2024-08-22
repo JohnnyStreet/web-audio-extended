@@ -34,11 +34,33 @@ export class AudioContextExtended extends AudioContext {
     return createImpulseResponse(this);
   }
 
-  loadBuffer(url: string) {
+  loadBuffer(url: string, onprogress?: (progress: number) => void) {
     return new Promise((resolve, reject) => {
       fetch(url)
         .then((response) => {
-          return response.arrayBuffer();
+          const contentLength = Number(response.headers.get('Content-Length'));
+          let loaded = 0;
+          const reader = response.body!.getReader();
+          const stream = new ReadableStream({
+            start(controller) {
+              function push() {
+                reader.read().then(({ done, value }) => {
+                  if (done) {
+                    controller.close();
+                    return;
+                  }
+                  loaded += value.length;
+                  if (onprogress) {
+                    onprogress(loaded / contentLength);
+                  }
+                  controller.enqueue(value);
+                  push();
+                });
+              }
+              push();
+            }
+          });
+          return new Response(stream).arrayBuffer();
         })
         .then((buffer) => {
           return this.decodeAudioData(buffer);

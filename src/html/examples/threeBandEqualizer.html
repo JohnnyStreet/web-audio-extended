@@ -30,7 +30,7 @@
   <body>
     <button id="play">play</button>
     <button id="stop">stop</button>
-    <br />
+    <div id="status"></div>
 
     <div class="effect">
       <h3>EQ</h3>
@@ -195,8 +195,8 @@
 
     <script src="../AudioContextExtended.js"></script>
     <script>
-      const play = document.getElementById("play");
-      const stop = document.getElementById("stop");
+      const playButton = document.getElementById("play");
+      const stopButton = document.getElementById("stop");
       const low = document.getElementById("low");
       const mid = document.getElementById("mid");
       const high = document.getElementById("high");
@@ -213,14 +213,16 @@
       const delayFeedback = document.getElementById("feedback");
       const delayWet = document.getElementById("delayWet");
       const delayDry = document.getElementById("delayDry");
+      const status = document.getElementById("status");
 
       let audioContext = null;
       let eq = null;
       let chorus = null;
       let reverb = null;
       let sourceNode = null;
+      let buffer = null;
 
-      play.addEventListener("click", async () => {
+      playButton.addEventListener("click", async () => {
         if (!audioContext) {
           audioContext = new AudioContextExtended();
           eq = audioContext.createThreeBandEqualizer();
@@ -234,6 +236,8 @@
         } else if (audioContext.state === "suspended") {
           await audioContext.resume();
         }
+
+        sourceNode?.stop();
 
         eq.low.value = parseFloat(low.value);
         eq.mid.value = parseFloat(mid.value);
@@ -254,14 +258,24 @@
 
         sourceNode = audioContext.createBufferSource();
         sourceNode.loop = true;
-        sourceNode.buffer = await audioContext.loadBuffer(
-          "./res/hip-hop-sample.mp3"
-        );
+
+        if (!buffer) {
+          status.innerText = "Loading...";
+          buffer = await audioContext.loadBuffer(
+            "./res/hip-hop-sample.mp3",
+            (progress) => {              
+              status.innerText = `Loading ${Math.round(progress * 100)}%`;
+            }
+          );
+          status.innerText = "";
+        }
+
+        sourceNode.buffer = buffer;
         sourceNode.connect(eq);
         sourceNode.start();
       });
 
-      stop.addEventListener("click", () => {
+      stopButton.addEventListener("click", () => {
         sourceNode?.stop();
       });
 
