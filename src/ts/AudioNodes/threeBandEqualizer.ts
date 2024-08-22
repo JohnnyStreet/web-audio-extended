@@ -12,18 +12,16 @@ export function createThreeBandEqualizer(audioContext: AudioContextExtended) {
   filterLow.type = "lowshelf";
   filterMid.type = "peaking";
   filterHigh.type = "highshelf";
-
-  // Set frequencies
+  
   filterLow.frequency.value = 250;
   filterMid.frequency.value = 1000;
   filterHigh.frequency.value = 4000;
 
-  // Set initial gain values to 0 dB (no boost/cut)
   filterLow.gain.value = 0;
   filterMid.gain.value = 0;
   filterHigh.gain.value = 0;
 
-  filterMid.Q.value = 1.41; // Q factor for peaking filter
+  filterMid.Q.value = 1.5; // Q factor for peaking filter
 
   // Connect input to filters in series
   inputNode.connect(filterLow);
@@ -31,14 +29,17 @@ export function createThreeBandEqualizer(audioContext: AudioContextExtended) {
   filterMid.connect(filterHigh);
   filterHigh.connect(outputNode);
 
-  // Expose gain controls and connect method
+  DefaultProperties.assign(inputNode, outputNode);
+  
   Object.assign(inputNode, {
     low: filterLow.gain,
     mid: filterMid.gain,
     high: filterHigh.gain,
-  });
-
-  DefaultProperties.assign(inputNode, outputNode);
+    lowCutoff: filterLow.frequency,
+    midCenter: filterMid.frequency,
+    midPrecision: filterMid.Q,
+    highCutoff: filterHigh.frequency,
+  });  
 
   return inputNode;
 }
