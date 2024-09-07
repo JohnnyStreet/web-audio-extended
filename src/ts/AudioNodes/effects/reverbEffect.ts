@@ -1,12 +1,12 @@
-import type { AudioContextExtended } from "../AudioContextExtended";
+import type { AudioContextExtended } from "../../AudioContextExtended";
 import { DefaultProperties } from "../defaultProperties";
-import { IImpulseResponseOptions } from "./impulseResponse";
+import { IImpulseResponseOptions } from "../../helpers/impulseResponse";
 
 export interface IReverbOptions extends IImpulseResponseOptions {
   wet?: number;
   dry?: number;
   buffer?: AudioBuffer;
-  // other params inherited from IImpulseResponseOptions
+  // other params are inherited from IImpulseResponseOptions
 }
 
 const defaultOptions = {
@@ -47,14 +47,16 @@ export function createReverbEffect(
   convolverNode.buffer =
     options.buffer || audioContext.createImpulseResponse(options);
 
-  inputNode.connect(lowpass);
-  lowpass.connect(highpass);
-  highpass.connect(predelayNode);
-  predelayNode.connect(convolverNode);
-  inputNode.connect(dryGain);
-  convolverNode.connect(wetGain);
-  wetGain.connect(outputNode);
-  dryGain.connect(outputNode);
+  inputNode.connect(dryGain).connect(outputNode);
+
+  inputNode
+    .connect(lowpass)
+    .connect(highpass)
+    .connect(predelayNode)
+    .connect(convolverNode)
+    .connect(wetGain)
+    .connect(outputNode);
+
   DefaultProperties.assign(inputNode, outputNode);
   Object.assign(inputNode, {
     wet: wetGain.gain,
@@ -62,10 +64,13 @@ export function createReverbEffect(
     predelay: predelayNode.delayTime,
     lowpass: lowpass.frequency,
     highpass: highpass.frequency,
-    get buffer(): AudioBuffer | null {
+  });
+
+  Object.defineProperty(inputNode, "buffer", {
+    get: function () {
       return convolverNode.buffer;
     },
-    set buffer(buffer: AudioBuffer) {
+    set: function (buffer: AudioBuffer) {
       convolverNode.buffer = buffer;
     },
   });

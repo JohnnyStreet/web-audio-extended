@@ -22,18 +22,29 @@
       }
       .effect label {
         display: inline-block;
-        width: 70px;
+        width: 80px;
+      }
+      .effect input[type="range"] {
+        width: 100px;
+        height: 10px;
+        margin: 5px;
       }
     </style>
   </head>
 
   <body>
+    <select id="wavSelect">
+      <option value="./res/hip-hop-sample.mp3">hip-hop</option>
+      <option value="./res/sample-reggae-loop.wav">reggae</option>
+      <option value="./res/sample-reggae-loop2.wav">reggae</option>
+    </select>
     <button id="play">play</button>
     <button id="stop">stop</button>
     <div id="status"></div>
 
     <div class="effect">
       <h3>EQ</h3>
+      <label>Bypass</label><input type="checkbox" id="eqBypass" /><br />
       <label>Low</label>
       <input
         type="range"
@@ -65,6 +76,7 @@
 
     <div class="effect">
       <h3>Chorus</h3>
+      <label>Bypass</label><input type="checkbox" id="chorusBypass" /><br />
       <label>Rate</label>
       <input
         type="range"
@@ -105,7 +117,8 @@
 
     <div class="effect">
       <h3>Delay</h3>
-      <label>Delay Time</label>
+      <label>Bypass</label><input type="checkbox" id="delayBypass" /><br />
+      <label>Time</label>
       <input
         type="range"
         id="delayTime"
@@ -145,6 +158,7 @@
 
     <div class="effect">
       <h3>Reverb</h3>
+      <label>Bypass</label><input type="checkbox" id="reverbBypass" /><br />
       <label>Predelay</label>
       <input
         type="range"
@@ -192,6 +206,16 @@
         step="0.01"
       /><br />
     </div>
+    <div class="effect">
+      <h3>Vinyl</h3>
+      <label>Bypass</label><input type="checkbox" id="vinylBypass" /><br />
+      <label>Noise</label>
+      <input type="range" id="vinylNoise" value="0.05" min="0" max="0.1" step="0.002" /><br />
+      <label>Wet</label>
+      <input type="range" id="vinylWet" value="0.5" min="0" max="1" step="0.01" /><br />
+      <label>Dry</label>
+      <input type="range" id="vinylDry" value="0.5" min="0" max="1" step="0.01" /><br />      
+      
 
     <script src="../AudioContextExtended.js"></script>
     <script>
@@ -213,26 +237,45 @@
       const delayFeedback = document.getElementById("feedback");
       const delayWet = document.getElementById("delayWet");
       const delayDry = document.getElementById("delayDry");
+      const eqBypass = document.getElementById("eqBypass");
+      const chorusBypass = document.getElementById("chorusBypass");
+      const delayBypass = document.getElementById("delayBypass");
+      const reverbBypass = document.getElementById("reverbBypass");
+      const vinylBypass = document.getElementById("vinylBypass");
+      const vinylNoise = document.getElementById("vinylNoise");
+      const vinylWet = document.getElementById("vinylWet");
+      const vinylDry = document.getElementById("vinylDry");      
       const status = document.getElementById("status");
+      const wavSelect = document.getElementById("wavSelect");
 
       let audioContext = null;
       let eq = null;
       let chorus = null;
+      let delay = null;
       let reverb = null;
+      let effectsChain = null;
       let sourceNode = null;
       let buffer = null;
 
       playButton.addEventListener("click", async () => {
         if (!audioContext) {
           audioContext = new AudioContextExtended();
+
           eq = audioContext.createThreeBandEqualizer();
           chorus = audioContext.createChorusEffect();
           delay = audioContext.createDelayEffect();
           reverb = audioContext.createReverbEffect();
-          eq.connect(chorus)
-            .connect(delay)
-            .connect(reverb)
-            .connect(audioContext.destination);
+          vinyl = audioContext.createVinylEffect();
+
+          effectsChain = audioContext.createEffectsChain([
+            eq,
+            chorus,
+            delay,
+            reverb,
+            vinyl
+          ]);
+
+          effectsChain.connect(audioContext.destination);
         } else if (audioContext.state === "suspended") {
           await audioContext.resume();
         }
@@ -255,6 +298,9 @@
         reverb.predelay.value = parseFloat(predelay.value);
         reverb.highpass.value = parseFloat(highpass.value);
         reverb.lowpass.value = parseFloat(lowpass.value);
+        vinyl.noise.value = parseFloat(vinylNoise.value);
+        vinyl.wet.value = parseFloat(vinylWet.value);
+        vinyl.dry.value = parseFloat(vinylDry.value);        
 
         sourceNode = audioContext.createBufferSource();
         sourceNode.loop = true;
@@ -262,8 +308,8 @@
         if (!buffer) {
           status.innerText = "Loading...";
           buffer = await audioContext.loadBuffer(
-            "./res/hip-hop-sample.mp3",
-            (progress) => {              
+            wavSelect.value,
+            (progress) => {
               status.innerText = `Loading ${Math.round(progress * 100)}%`;
             }
           );
@@ -271,12 +317,14 @@
         }
 
         sourceNode.buffer = buffer;
-        sourceNode.connect(eq);
+        sourceNode.connect(effectsChain);
         sourceNode.start();
+        vinyl.start();
       });
 
       stopButton.addEventListener("click", () => {
         sourceNode?.stop();
+        vinyl.stop();
       });
 
       low.addEventListener("input", () => {
@@ -382,6 +430,50 @@
       delayWet.addEventListener("input", () => {
         delay.wet.setTargetAtTime(
           delayWet.value,
+          audioContext.currentTime,
+          0.02
+        );
+      });
+
+      eqBypass.addEventListener("input", () => {
+        effectsChain.toggleBypass(eq, eqBypass.checked);
+      });
+
+      chorusBypass.addEventListener("input", () => {
+        effectsChain.toggleBypass(chorus, chorusBypass.checked);
+      });
+
+      delayBypass.addEventListener("input", () => {
+        effectsChain.toggleBypass(delay, delayBypass.checked);
+      });
+
+      reverbBypass.addEventListener("input", () => {
+        effectsChain.toggleBypass(reverb, reverbBypass.checked);
+      });
+
+      vinylBypass.addEventListener("input", () => {
+        effectsChain.toggleBypass(vinyl, vinylBypass.checked);
+      });
+
+      vinylNoise.addEventListener("input", () => {
+        vinyl.noise.setTargetAtTime(
+          vinylNoise.value,
+          audioContext.currentTime,
+          0.02
+        );
+      });
+
+      vinylWet.addEventListener("input", () => {
+        vinyl.wet.setTargetAtTime(
+          vinylWet.value,
+          audioContext.currentTime,
+          0.02
+        );
+      });
+
+      vinylDry.addEventListener("input", () => {
+        vinyl.dry.setTargetAtTime(
+          vinylDry.value,
           audioContext.currentTime,
           0.02
         );

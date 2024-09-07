@@ -1,4 +1,4 @@
-import type { AudioContextExtended } from "../AudioContextExtended";
+import type { AudioContextExtended } from "../../AudioContextExtended";
 import { DefaultProperties } from "../defaultProperties";
 
 export function createChorusEffect(audioContext: AudioContextExtended) {
@@ -10,17 +10,13 @@ export function createChorusEffect(audioContext: AudioContextExtended) {
   const wetGain = audioContext.createGain();
   const dryGain = audioContext.createGain();
 
-  wetGain.connect(outputNode);
-  dryGain.connect(outputNode);
+  inputNode.connect(dryGain).connect(outputNode);
 
-  inputNode.connect(delayNode);
-  delayNode.connect(wetGain);
+  inputNode.connect(delayNode).connect(wetGain).connect(outputNode);
 
-  inputNode.connect(dryGain);
-  
-  delayNode.delayTime.value = 0.002;
+  delayNode.delayTime.value = 0.004;
   delayModulator.frequency.value = 0.2;
-  delayModulatorGain.gain.value = 0.02;
+  delayModulatorGain.gain.value = 0.002;
 
   delayModulator.connect(delayModulatorGain);
   delayModulatorGain.connect(delayNode.delayTime);

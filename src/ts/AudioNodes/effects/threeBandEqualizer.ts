@@ -1,4 +1,4 @@
-import type { AudioContextExtended } from "../AudioContextExtended";
+import type { AudioContextExtended } from "../../AudioContextExtended";
 import { DefaultProperties } from "../defaultProperties";
 
 export function createThreeBandEqualizer(audioContext: AudioContextExtended) {
@@ -12,7 +12,7 @@ export function createThreeBandEqualizer(audioContext: AudioContextExtended) {
   filterLow.type = "lowshelf";
   filterMid.type = "peaking";
   filterHigh.type = "highshelf";
-  
+
   filterLow.frequency.value = 250;
   filterMid.frequency.value = 1000;
   filterHigh.frequency.value = 4000;
@@ -30,7 +30,7 @@ export function createThreeBandEqualizer(audioContext: AudioContextExtended) {
   filterHigh.connect(outputNode);
 
   DefaultProperties.assign(inputNode, outputNode);
-  
+
   Object.assign(inputNode, {
     low: filterLow.gain,
     mid: filterMid.gain,
@@ -39,7 +39,7 @@ export function createThreeBandEqualizer(audioContext: AudioContextExtended) {
     midCenter: filterMid.frequency,
     midPrecision: filterMid.Q,
     highCutoff: filterHigh.frequency,
-  });  
+  });
 
   return inputNode;
 }

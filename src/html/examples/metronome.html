@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Metronome Example</title>
+  </head>
+  <body>
+    <input type="number" id="bpm" value="120" />
+    <button id="startstop">Start</button>
+
+    <script src="../AudioContextExtended.js"></script>
+    <script>
+      const startstop = document.getElementById("startstop");
+      const bpm = document.getElementById("bpm");
+
+      const audioContext = new AudioContextExtended();
+
+      const audioClock = audioContext.createAudioClock();
+      audioClock.metronome = true;
+
+      bpm.oninput = () => {
+        const f = parseFloat(bpm.value) || 120;
+        if (f)
+          audioClock.bpm.setTargetAtTime(f, audioContext.currentTime, 0.01);
+      };
+
+      startstop.addEventListener("click", () => {
+        if (audioClock.started) {
+          audioClock.stop();
+          startstop.innerText = "Start";
+        } else {
+          audioClock.start();
+          startstop.innerText = "Stop";
+        }
+      });
+    </script>
+  </body>
+</html>

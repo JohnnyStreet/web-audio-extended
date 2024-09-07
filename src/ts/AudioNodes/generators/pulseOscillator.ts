@@ -1,4 +1,4 @@
-import type { AudioContextExtended } from "../AudioContextExtended";
+import type { AudioContextExtended } from "../../AudioContextExtended";
 import { DefaultProperties } from "../defaultProperties";
 
 const squareCurve = new Float32Array(256);

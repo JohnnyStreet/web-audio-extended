@@ -1,13 +1,16 @@
-import { createThreeBandEqualizer } from "./AudioNodes/threeBandEqualizer";
-import { createChorusEffect } from "./AudioNodes/chorusEffect";
-import { createDelayEffect } from "./AudioNodes/delayEffect";
-import { createReverbEffect } from "./AudioNodes/reverbEffect";
+import { createThreeBandEqualizer } from "./AudioNodes/effects/threeBandEqualizer";
+import { createChorusEffect } from "./AudioNodes/effects/chorusEffect";
+import { createDelayEffect } from "./AudioNodes/effects/delayEffect";
+import { createReverbEffect } from "./AudioNodes/effects/reverbEffect";
 
 import {
   createImpulseResponse,
   IImpulseResponseOptions,
-} from "./AudioNodes/impulseResponse";
-import { createPulseOscillator } from "./AudioNodes/pulseOscillator";
+} from "./helpers/impulseResponse";
+import { createPulseOscillator } from "./AudioNodes/generators/pulseOscillator";
+import { createEffectsChain } from "./AudioNodes/effectsChain";
+import { createVinylEffect } from "./AudioNodes/effects/vinylEffect";
+import { createAudioClock } from "./audioClock";
 
 export class AudioContextExtended extends AudioContext {
   createThreeBandEqualizer() {
@@ -34,11 +37,23 @@ export class AudioContextExtended extends AudioContext {
     return createImpulseResponse(this);
   }
 
+  createAudioClock() {
+    return createAudioClock(this);
+  }
+
+  createVinylEffect() {
+    return createVinylEffect(this);
+  }
+
+  createEffectsChain(effects?: AudioNode[]) {
+    return createEffectsChain(this, effects);
+  }
+
   loadBuffer(url: string, onprogress?: (progress: number) => void) {
     return new Promise((resolve, reject) => {
       fetch(url)
         .then((response) => {
-          const contentLength = Number(response.headers.get('Content-Length'));
+          const contentLength = Number(response.headers.get("Content-Length"));
           let loaded = 0;
           const reader = response.body!.getReader();
           const stream = new ReadableStream({
@@ -58,7 +73,7 @@ export class AudioContextExtended extends AudioContext {
                 });
               }
               push();
-            }
+            },
           });
           return new Response(stream).arrayBuffer();
         })
