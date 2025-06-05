@@ -4,6 +4,10 @@ export function createAudioClock(audioContext: AudioContext) {
   let nextTickTime = 0;
   let timer: number | null = null;
   let bpm = audioContext.createConstantSource();
+  const nullOutput = audioContext.createGain();
+  nullOutput.gain.value = 0;
+  nullOutput.connect(audioContext.destination);
+  bpm.connect(nullOutput);
   bpm.offset.value = 120;
   bpm.start();
   let beats = 4;
@@ -22,7 +26,9 @@ export function createAudioClock(audioContext: AudioContext) {
     oscillator.type = "square";
     oscillator.frequency.value = currentBeat === 0 ? 880 : 440;
     oscillator.connect(gainNode);
+    gainNode.gain.setValueAtTime(0.1, time);
     oscillator.start(time);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
     oscillator.stop(time + 0.05);
     currentBeat = (currentBeat + 1) % beats;
   };
@@ -77,8 +83,27 @@ export function createAudioClock(audioContext: AudioContext) {
     stop,
     bpm: bpm.offset,
     metronomeVolume: gainNode.gain,
-    beats,
+    nullOutput,
     getPlaybackTime,
+  });
+
+  Object.defineProperty(gainNode, "elapsedTime", {
+    get: function () {
+      return elapsedTime;
+    },
+    enumerable: true,
+    configurable: true,
+  });
+
+  Object.defineProperty(gainNode, "beats", {
+    get: function () {
+      return beats;
+    },
+    set: function (value: number) {
+      beats = value;
+    },
+    enumerable: true,
+    configurable: true,
   });
 
   Object.defineProperty(gainNode, "started", {
