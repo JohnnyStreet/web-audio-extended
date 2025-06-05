@@ -49,7 +49,7 @@ export class AudioContextExtended extends AudioContext {
     return createEffectsChain(this, effects);
   }
 
-  loadBuffer(url: string, onprogress?: (progress: number) => void) {
+  loadBuffer(url: string, onprogress?: (progress: number) => void, offlineAudioContext?: OfflineAudioContext) {
     return new Promise((resolve, reject) => {
       fetch(url)
         .then((response) => {
@@ -78,7 +78,7 @@ export class AudioContextExtended extends AudioContext {
           return new Response(stream).arrayBuffer();
         })
         .then((buffer) => {
-          return this.decodeAudioData(buffer);
+          return (offlineAudioContext || this).decodeAudioData(buffer);
         })
         .then((audioBuffer) => {
           resolve(audioBuffer);
